@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Template</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <script src="https://code.highcharts.com/highcharts.js"></script>
+
+</head>
+<body>
+
+<div class="container">
+    <form class="form-container">
+        <div class="form-group">
+            <label for="divisionSelect">Select Division:</label>
+            <select class="form-control" id="divisionSelect">
+                {% for division in divisions %}
+                <option value="{{ division.id }}">{{ division.division }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="districtSelect">Select District:</label>
+            <select class="form-control" id="districtSelect" disabled>
+                <!-- District options will be dynamically added here using JavaScript -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="tehsilSelect">Select Tehsil:</label>
+            <select class="form-control" id="tehsilSelect" disabled>
+                <!-- Tehsil options will be dynamically added here using JavaScript -->
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="ucSelect">Select UC:</label>
+            <select class="form-control" id="ucSelect" disabled>
+                <!-- UC options will be dynamically added here using JavaScript -->
+            </select>
+        </div>
+
+        <p></p>
+    </form>
+
+    <div id="barChartContainer" style="height: 400px;"></div>
+
+<!-- Container for the Stacked Bar Chart -->
+<div id="stackedBarChartContainer" style="height: 400px;"></div>
+
+<!-- Container for the Pie Chart -->
+<div id="pieChartContainer" style="height: 400px;"></div>
+</div>
+
+<!-- Include Bootstrap JS and jQuery -->
+<!-- Include Bootstrap JS and jQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+$(document).ready(function(){
+    // When a division is selected
+    $("#divisionSelect").change(function(){
+        var divisionId = $(this).val();
+
+        $("#districtSelect").prop("disabled", true);
+        $("#tehsilSelect").prop("disabled", true);
+        $("#ucSelect").prop("disabled", true);
+
+        $("#districtSelect, #tehsilSelect, #ucSelect").empty();
+
+        if (divisionId !== "") {
+            $.ajax({
+                url: '/get_districts/',
+                type: 'GET',
+                data: {'division_id': divisionId},
+                dataType: 'json',
+                success: function(data){
+                    $("#districtSelect").prop("disabled", false);
+
+                    $.each(data, function(key, value){
+                        $("#districtSelect").append('<option value="' + key + '">' + value + '</option>');
+                    });
+
+                    updatePopulation(divisionId, null, null, null);
+                     updateChar(divisionId, null, null, null);
+
+                }
+            });
+        }
+    });
+
+    // When a district is selected
+    $("#districtSelect").change(function(){
+        var districtId = $(this).val();
+
+        $("#tehsilSelect").prop("disabled", true);
+        $("#ucSelect").prop("disabled", true);
+
+        $("#tehsilSelect, #ucSelect").empty();
+
+        if (districtId !== "") {
+            $.ajax({
+                url: '/get_tehsils/',
+                type: 'GET',
+                data: {'district_id': districtId},
+                dataType: 'json',
+                success: function(data){
+                    $("#tehsilSelect").prop("disabled", false);
+
+                    $.each(data, function(key, value){
+                        $("#tehsilSelect").append('<option value="' + key + '">' + value + '</option>');
+                    });
+
+                    var divisionId = $("#divisionSelect").val();
+                    updatePopulation(divisionId, districtId, null, null);
+                    updateChar(divisionId, districtId, null, null);
+
+                }
+            });
+        }
+    });
+
+    // When a tehsil is selected
+    $("#tehsilSelect").change(function(){
+        var tehsilId = $(this).val();
+
+        $("#ucSelect").prop("disabled", true);
+        $("#ucSelect").empty();
+
+        if (tehsilId !== "") {
+            $.ajax({
+                url: '/get_ucs/',
+                type: 'GET',
+                data: {'tehsil_id': tehsilId},
+                dataType: 'json',
+                success: function(data){
+                    $("#ucSelect").prop("disabled", false);
+
+                    $.each(data, function(key, value){
+                        $("#ucSelect").append('<option value="' + key + '">' + value + '</option>');
+                    });
+
+                    var divisionId = $("#divisionSelect").val();
+                    var districtId = $("#districtSelect").val();
+                    updatePopulation(divisionId, districtId, tehsilId, null);
+                    updateChar(divisionId, districtId, tehsilId, null);
+
+                }
+            });
+        }
+    });
+
+    // When a UC is selected
+    $("#ucSelect").change(function(){
+        var ucId = $(this).val();
+        var divisionId = $("#divisionSelect").val();
+        var districtId = $("#districtSelect").val();
+        var tehsilId = $("#tehsilSelect").val();
+
+        updatePopulation(divisionId, districtId, tehsilId, ucId);
+        updateChar(divisionId, districtId, tehsilId, ucId);
+
+    });
+
+    // Function to update the population based on selected filters
+    function updatePopulation(divisionId, districtId, tehsilId, ucId) {
+        $.ajax({
+            url: '/get_population/',
+            type: 'GET',
+            data: {
+                'division_id': divisionId,
+                'district_id': districtId,
+                'tehsil_id': tehsilId,
+                'uc_id': ucId,
+            },
+            dataType: 'json',
+            success: function(data){
+                console.log("Population data received:", data);
+                $("p").text("Population: " + data.total_population);
+            },
+            error: function(xhr, status, error) {
+                console.error("AJAX Error:", status, error);
+            }
+        });
+    }
+
+    function updateCharts(data) {
+    Highcharts.chart('barChartContainer', {
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: 'Bar Chart for Counts'
+        },
+        xAxis: {
+            categories: ["Newborns Weighted", "6 Months Old Children", "6-59 Months Old Children", "12-23 Months Old Children"],
+            title: {
+                text: 'Health Metrics'
+            }
+        },
+        yAxis: {
+            title: {
+                text: 'Count'
+            }
+        },
+        series: [{
+            name: 'Counts',
+            data: [data.total_newborns_weighted, data.age_group_counts.no_6_months_old_children__sum, data.age_group_counts.no_6_59_months_old_children__sum, data.age_group_counts.no_12_23_months_old_children__sum],
+        }]
+    });
+
+    // Stacked Bar Chart
+    Highcharts.chart('stackedBarChartContainer', {
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: 'Stacked Bar Chart for Age Groups'
+        },
+        xAxis: {
+            categories: ["Newborns Weighted", "6 Months Old Children", "6-59 Months Old Children", "12-23 Months Old Children"],
+            title: {
+                text: 'Age Groups'
+            }
+        },
+        yAxis: {
+            title: {
+                text: 'Count'
+            }
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal'
+            }
+        },
+        series: Object.keys(data.age_group_counts).map(category => ({
+            name: category,
+            data: [data.age_group_counts[category]],
+        })),
+    });
+
+    // Pie Chart
+    Highcharts.chart('pieChartContainer', {
+        chart: {
+            type: 'pie'
+        },
+        title: {
+            text: 'Pie Chart for Percentage Distribution'
+        },
+        series: [{
+            name: 'Percentage',
+            data: [
+                { name: 'Fully Immunized', y: data.fully_immunized_percentage },
+                { name: 'Not Fully Immunized', y: 100 - data.fully_immunized_percentage },
+            ],
+        }],
+    });
+}
+
+    // Make an AJAX call to fetch data
+    function updateChar(divisionId, districtId, tehsilId, ucId) {
+    $.ajax({
+        url: '/get_child/',  // Replace with the actual URL to fetch data
+        method: 'GET',
+        data: {
+                'division_id': divisionId,
+                'district_id': districtId,
+                'tehsil_id': tehsilId,
+                'uc_id': ucId,
+            },
+        dataType: 'json',
+        success: function(response) {
+            // Assuming the response is in the same format as your 'data' variable
+            updateCharts(response);
+        },
+        error: function(error) {
+            console.error('Error fetching data:', error);
+        }
+    });
+    }
+});
+</script>
+
+</body>
+</html>
