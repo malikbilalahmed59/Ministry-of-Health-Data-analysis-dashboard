@@ -1,0 +1,439 @@
+{% load static %}
+<!-- Footer Start -->
+<div class="container-fluid pt-4 px-4">
+    <div class="bg-light rounded-top p-4">
+        <div class="row">
+            <div class="col-12 col-sm-6 text-center text-sm-start">
+                &copy; <a href="#">Intelligent & Customizable Dashbaord</a>, All Right Reserved.
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- Footer End -->
+</div>
+<!-- Content End -->
+
+
+<!-- Back to Top -->
+<a href="#" class="btn btn-lg btn-primary btn-lg-square back-to-top"><i class="bi bi-arrow-up"></i></a>
+</div>
+
+<script>
+    $(document).ready(function(){
+        // When a division is selected
+        $("#divisionSelect").change(function(){
+            var divisionId = $(this).val();
+
+            $("#districtSelect").prop("disabled", true);
+            $("#tehsilSelect").prop("disabled", true);
+            $("#ucSelect").prop("disabled", true);
+
+            $("#districtSelect, #tehsilSelect, #ucSelect").empty();
+
+            if (divisionId !== "") {
+                $.ajax({
+                    url: '/get_districts/',
+                    type: 'GET',
+                    data: {'division_id': divisionId},
+                    dataType: 'json',
+                    success: function(data){
+                        $("#districtSelect").prop("disabled", false);
+
+                        $.each(data, function(key, value){
+                            $("#districtSelect").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                        updatePopulation(divisionId, null, null, null);
+                        updateChar(divisionId, null, null, null);
+
+                    }
+                });
+            }
+        });
+
+        $('#divisionSelect').val('2').change();
+
+
+        // When a district is selected
+        $("#districtSelect").change(function(){
+            var districtId = $(this).val();
+
+            $("#tehsilSelect").prop("disabled", true);
+            $("#ucSelect").prop("disabled", true);
+
+            $("#tehsilSelect, #ucSelect").empty();
+
+            if (districtId !== "") {
+                $.ajax({
+                    url: '/get_tehsils/',
+                    type: 'GET',
+                    data: {'district_id': districtId},
+                    dataType: 'json',
+                    success: function(data){
+                        $("#tehsilSelect").prop("disabled", false);
+
+                        $.each(data, function(key, value){
+                            $("#tehsilSelect").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                        var divisionId = $("#divisionSelect").val();
+                        updatePopulation(divisionId, districtId, null, null);
+                        updateChar(divisionId, districtId, null, null);
+
+                    }
+                });
+            }
+        });
+
+        // When a tehsil is selected
+        $("#tehsilSelect").change(function(){
+            var tehsilId = $(this).val();
+
+            $("#ucSelect").prop("disabled", true);
+            $("#ucSelect").empty();
+
+            if (tehsilId !== "") {
+                $.ajax({
+                    url: '/get_ucs/',
+                    type: 'GET',
+                    data: {'tehsil_id': tehsilId},
+                    dataType: 'json',
+                    success: function(data){
+                        $("#ucSelect").prop("disabled", false);
+
+                        $.each(data, function(key, value){
+                            $("#ucSelect").append('<option value="' + key + '">' + value + '</option>');
+                        });
+
+                        var divisionId = $("#divisionSelect").val();
+                        var districtId = $("#districtSelect").val();
+                        updatePopulation(divisionId, districtId, tehsilId, null);
+                        updateChar(divisionId, districtId, tehsilId, null);
+
+                    }
+                });
+            }
+        });
+
+        // When a UC is selected
+        $("#ucSelect").change(function(){
+            var ucId = $(this).val();
+            var divisionId = $("#divisionSelect").val();
+            var districtId = $("#districtSelect").val();
+            var tehsilId = $("#tehsilSelect").val();
+
+            updatePopulation(divisionId, districtId, tehsilId, ucId);
+            updateChar(divisionId, districtId, tehsilId, ucId);
+
+        });
+
+        // Function to update the population based on selected filters
+        function updatePopulation(divisionId, districtId, tehsilId, ucId) {
+            $.ajax({
+                url: '/get_population/',
+                type: 'GET',
+                data: {
+                    'division_id': divisionId,
+                    'district_id': districtId,
+                    'tehsil_id': tehsilId,
+                    'uc_id': ucId,
+                },
+                dataType: 'json',
+                success: function(data){
+                    console.log("Population data received:", data);
+                    $("#m3").text(data.total_population);            },
+                error: function(xhr, status, error) {
+                    console.error("AJAX Error:", status, error);
+                }
+            });
+        }
+
+        function updateCharts(data) {
+        Highcharts.chart('barChartContainer', {
+            chart: {
+                type: 'bar'
+            },
+            title: {
+                text: 'Bar Chart for Counts'
+            },
+            xAxis: {
+                categories: ["Newborns Weighted", "6 Months Old Children", "6-59 Months Old Children", "12-23 Months Old Children", "5-years children"],
+                title: {
+                    text: 'Health Metrics'
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Count'
+                }
+            },
+            series: [{
+                name: 'Counts',
+                data: [data.total_newborns_weighted, data.age_group_counts.no_6_months_old_children__sum, data.age_group_counts.no_6_59_months_old_children__sum, data.age_group_counts.no_12_23_months_old_children__sum,data.age_group_counts.no_5_years_children__sum],
+            }]
+        });
+        Highcharts.chart('chart-container', {
+    chart: {
+        type: 'bar'
+    },
+    title: {
+        text: 'Total Number of Visits by Entity'
+    },
+    xAxis: {
+        categories: ['LHS', 'DCO (NP)', 'ADC (NP)', 'FPO', 'PPIU']
+    },
+    yAxis: {
+        title: {
+            text: 'Total Number of Visits'
+        }
+    },
+    series: [{
+        name: 'Total Number of Visits',
+        data: [
+            {{ context.aggregated_data.total_visits_lhs }},
+            {{ context.aggregated_data.total_visits_dco_np }},
+            {{ context.aggregated_data.total_visits_adc_np }},
+            {{ context.aggregated_data.total_visits_fpo }},
+            {{ context.aggregated_data.total_visits_ppiu }},
+        ]
+    }]
+});
+        // Stacked Bar Chart
+        Highcharts.chart('stackedBarChartContainer', {
+            chart: {
+                type: 'bar'
+            },
+            title: {
+                text: 'Stacked Bar Chart for Age Groups'
+            },
+            xAxis: {
+                categories: ["Newborns Weighted", "6 Months Old Children", "6-59 Months Old Children", "12-23 Months Old Children", "5-years children"],
+                title: {
+                    text: 'Age Groups'
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Count'
+                }
+            },
+            plotOptions: {
+                series: {
+                    stacking: 'normal'
+                }
+            },
+            series: Object.keys(data.age_group_counts).map(category => ({
+                name: category,
+                data: [data.age_group_counts[category]],
+            })),
+        });
+
+        // Pie Chart
+        Highcharts.chart('pieChartContainer', {
+            chart: {
+                type: 'pie'
+            },
+            title: {
+                text: 'Pie Chart for Percentage Distribution'
+            },
+            series: [{
+                name: 'Percentage',
+                data: [
+                    { name: 'Fully Immunized', y: data.fully_immunized_percentage },
+                    { name: 'Not Fully Immunized', y: 100 - data.fully_immunized_percentage },
+                ],
+            }],
+        });
+    }
+
+        // Make an AJAX call to fetch data
+        function updateChar(divisionId, districtId, tehsilId, ucId) {
+        $.ajax({
+            url: '/get_child/',  // Replace with the actual URL to fetch data
+            method: 'GET',
+            data: {
+                    'division_id': divisionId,
+                    'district_id': districtId,
+                    'tehsil_id': tehsilId,
+                    'uc_id': ucId,
+                },
+            dataType: 'json',
+            success: function(response) {
+                // Assuming the response is in the same format as your 'data' variable
+                updateCharts(response);
+            },
+            error: function(error) {
+                console.error('Error fetching data:', error);
+            }
+        });
+        }
+    });
+</script>
+
+
+<script>
+    $(document).ready(function() {
+        let tableCount = 1;
+
+        // Function to add a new table selection section
+        function addTableSelection() {
+            tableCount++;
+            let tableSelectionHtml = `
+                <div class="form-control p-2">
+                    <label for="selected_table_${tableCount}">Select a table:</label>
+                    <select class="form-select" name="selected_table_${tableCount}" id="compSel_${tableCount}" required>
+                        <option value="">Select a table</option>
+                        <option value="Child Health">Child Health</option>
+                        <option value="Mother Health">Mother Health</option>
+                        <!-- Add more options as needed -->
+                    </select>
+                </div>
+                <div class="form-control p-2">
+                    <label for="selected_fields_${tableCount}">Select fields:</label>
+                    <select class="form-select" name="selected_fields_${tableCount}" id="compFields_${tableCount}">
+                        <!-- Fields will be dynamically populated using JavaScript -->
+                    </select>
+                </div>
+            `;
+            $('#tableSelectionContainer').append(tableSelectionHtml);
+
+            // Event handler for table selection change
+            $(`#compSel_${tableCount}`).on('change', function() {
+                // Fetch selected table data using AJAX
+                let selectedTable = $(this).val();
+                let csrf_token = $('input[name="csrfmiddlewaretoken"]').val();  // Get the CSRF token
+
+                $.ajax({
+                    url: '/get_fields/',  // Replace with your Django URL
+                    method: 'POST',
+                    data: { selectedTable: selectedTable, csrfmiddlewaretoken: csrf_token },
+                    dataType: 'json',
+                    success: function(data) {
+                        // Clear previous values
+                        $(`#compFields_${tableCount}`).empty();
+
+                        // Check if there's an error in the response
+                        if (data.error) {
+                            console.error('Error fetching table data:', data.error);
+                            // Handle the error, e.g., show an alert
+                        } else {
+                            // Append fetched values to compFields
+                            $.each(data.fields, function(index, value) {
+                                $(`#compFields_${tableCount}`).append('<option>' + value + '</option>');
+                            });
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Error fetching table data:', error);
+                    }
+                });
+            });
+        }
+
+        // Initial table selection section
+        addTableSelection();
+
+        // Event handler for the "Add Table" button
+        $('#addTableBtn').click(function(e) {
+            e.preventDefault();
+            addTableSelection();
+        });
+
+       $('#compareBtn').click(function(e) {
+    e.preventDefault();
+
+    // Fetch selected tables and fields
+    let selectedTables = $('[name^="selected_table"]').map(function() { return this.value; }).get();
+    let selectedFields = $('[name^="selected_fields"]').map(function() { return this.value; }).get();
+    let csrf_token = $('input[name="csrfmiddlewaretoken"]').val();  // Get the CSRF token
+
+    // Additional AJAX request to fetch chart data
+    $.ajax({
+        url: '/get_chart_data/',  // Replace with your Django URL
+        method: 'POST',
+        data: {
+            selected_table: selectedTables,
+            selected_fields: selectedFields,
+            csrfmiddlewaretoken: csrf_token,
+        },
+        dataType: 'json',
+        success: function(response) {
+            // Assuming 'charts' is a container for multiple charts
+            let chartsContainer = $('#charts');
+
+            // Clear existing charts
+            chartsContainer.empty();
+
+            // Iterate over the received data to create multiple charts
+            selectedTables.forEach(function(table, index) {
+                // Create a unique chart container for each table
+                let chartContainerId = `chart_${index}`;
+                chartsContainer.append(`<div id="${chartContainerId}" class="chart-container"></div>`);
+
+                // Create a Highchart for the current table
+                Highcharts.chart(chartContainerId, {
+                    chart: {
+                        type: 'bar'
+                    },
+                    title: {
+                        text: `Stacked Bar Chart for ${table}`
+                    },
+                    xAxis: {
+                        categories: response.chart_data,
+                        title: {
+                            text: 'Categories'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Count'
+                        }
+                    },
+                    plotOptions: {
+                        series: {
+                            stacking: 'normal'
+                        }
+                    },
+                    series: Object.keys(response.chart_data).map(category => ({
+                        name: category,
+                        data: [response.chart_data[category]],
+                    })),
+                });
+            });
+        },
+        error: function(error) {
+            console.error('Error fetching chart data:', error);
+        }
+    });
+});
+
+
+
+    });
+</script>
+
+
+<!-- JavaScript Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<!-- Google Web Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Icon Font Stylesheet -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Libraries Stylesheet -->
+<link href="{% static 'lib/tempusdominus/css/tempusdominus-bootstrap-4.min.css' %}" rel="stylesheet"/>
+<script src="{% static 'lib/waypoints/waypoints.min.js' %}"></script>
+<script src="{% static 'lib/tempusdominus/js/moment.min.js' %}"></script>
+<script src="{% static 'lib/owlcarousel/owl.carousel.min.js' %}"></script>
+<script src="{% static 'lib/chart/chart.min.js' %}"></script>
+
+
+<!-- Template Javascript -->
+<script src="{% static 'js/main.js' %}"></script>

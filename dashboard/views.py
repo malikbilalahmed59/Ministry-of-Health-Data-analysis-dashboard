@@ -1,12 +1,142 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Sum
 from django.shortcuts import render
+from django.db.models import Count
+from django.views.generic import CreateView, DeleteView
+from django.shortcuts import render, HttpResponse, redirect
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from rest_framework.viewsets import ModelViewSet
+from django.db.models import Sum
+from django.http import JsonResponse
+from django.apps import apps
 
-from dashboard.models import District, Division, UC, Tehsil, Facility, ChildHealth
+from dashboard.models import District, Division, UC, Tehsil, Facility, ChildHealth, Supervision, MotherHealth, \
+    FamilyPlanning, BirthsDeaths
 from dashboard.serializer import DivisionSerializer
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, authenticate
+from .forms import RegistrationForm, LoginForm, MotherHealthForm, BirthsDeathsForm
+from django.urls import reverse_lazy
+from .models import MotherHealth
+from .forms import FamilyPlanningForm
 
 
+def child_health(request):
+    # form = MotherHealthForm.objects.all()
+    if request.method == 'POST':
+        form = BirthsDeathsForm(request.POST)
+        if form.is_valid():
+            # Process the form data if needed
+            BirthsDeaths_instance = form.save(commit=False)
+            BirthsDeaths_instance.save()
+            return redirect('home')
+        else:
+            form = BirthsDeathsForm()
+    else:
+        form = BirthsDeathsForm()
+
+        # Fetch related lhw_info data efficiently using select_related
+    BirthsDeaths_data = BirthsDeaths.objects.select_related('lhw_code').all()
+    return render(request, 'child_health.html', {'BirthsDeaths_data':BirthsDeaths_data,'form':form})
+
+
+def mother_health(request):
+    if request.method == 'POST':
+        form = FamilyPlanningForm(request.POST)
+        if form.is_valid():
+            # Process the form data if needed
+            family_planning_instance = form.save(commit=False)
+            family_planning_instance.save()
+            return redirect('home')
+        else:
+            form = FamilyPlanningForm()
+    else:
+        form = FamilyPlanningForm()
+
+    # Fetch related lhw_info data efficiently using select_related
+    family_planning_data = FamilyPlanning.objects.select_related('lhw_code').all()
+
+    return render(request, 'mother_health.html', {'form': form, 'family_planning_data': family_planning_data})
+
+
+def child_health_view(request):
+
+    BirthsDeaths_data = BirthsDeaths.objects.select_related('lhw_code').all()
+    print(BirthsDeaths_data[0].no_live_births)
+
+    return render(request, 'child_health_view.html',{'context': BirthsDeaths_data})
+
+
+def mother_health_view(request):
+    family_planning_data = FamilyPlanning.objects.select_related('lhw_code').all()
+
+    return render(request, 'mother_health_view.html',{'context': family_planning_data})
+
+
+def SignupPage(request):
+    if request.method == 'POST':
+        uname = request.POST.get('username')
+        email = request.POST.get('email')
+        pass1 = request.POST.get('password1')
+        pass2 = request.POST.get('password2')
+
+        if pass1 != pass2:
+            return HttpResponse("Your password and confrom password are not Same!!")
+        else:
+
+            my_user = User.objects.create_user(uname, email, pass1)
+            my_user.save()
+            return redirect('login')
+
+    return render(request, 'signup.html')
+
+
+def LoginPage(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        pass1 = request.POST.get('pass')
+        user = authenticate(request, username=username, password=pass1)
+        if user is not None:
+            login(request, user)
+            return redirect('home')
+        else:
+            return HttpResponse("Username or Password is incorrect!!!")
+
+    return render(request, 'signin.html')
+
+
+def LogoutPage(request):
+    logout(request)
+    return redirect('login')
+
+
+class MotherHealthCreateView(CreateView):
+    model = MotherHealth
+    form_class = MotherHealthForm
+    template_name = 'mother_health_form.html'  # Adjust the path to your template
+    success_url = '/success/'
+
+
+class MotherHealthDeleteView(DeleteView):
+    model = MotherHealth
+    template_name = 'mother_health_confirm_delete.html'  # Adjust the path to your template
+    success_url = reverse_lazy('home.html')
+
+
+def register(request):
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('home')  # Redirect to the home page
+    else:
+        form = RegistrationForm()
+    return render(request, 'signup.html', {'form': form})
+
+
+@login_required(login_url='login')
 def home(request):
     divisions = Division.objects.all()
     total_newborns_weighted = ChildHealth.objects.aggregate(Sum('no_newborns_weighted'))[
@@ -22,16 +152,50 @@ def home(request):
                                           'no_12_23_months_old_children__sum'] or 1  # Avoid division by zero
     fully_immunized_percentage = (ChildHealth.objects.filter(
         no_12_23_months_old_children_fully_immunized__gt=0).count() / total_12_23_months_old_children) * 100
-    print(total_12_23_months_old_children)
 
-    return render(request, 'index.html',{'divisions': divisions})
+    data = MotherHealth.objects.all()
+
+    # Example preprocessing: Convert queryset to a list of dictionaries
+    chart_data = [
+        {
+            'label': 'Total Pregnant Women',
+            'data': [entry.total_pregnant_women for entry in data]
+        },
+        {
+            'label': 'No. Pregnant Breastfeeding Malnutrition Women',
+            'data': [entry.no_pregnant_breastfeeding_malnutrition_women_mauc for entry in data]
+        },
+        {
+            'label': 'No. Abortions',
+            'data': [entry.no_abortions for entry in data]
+        },
+    ]
+    aggregated_data = Supervision.objects.aggregate(
+        total_visits_lhs=Sum('no_of_visits_by_lhs'),
+        total_visits_dco_np=Sum('no_of_visits_by_dco_np'),
+        total_visits_adc_np=Sum('no_of_visits_by_adc_np'),
+        total_visits_fpo=Sum('no_of_visits_by_fpo'),
+        total_visits_ppiu=Sum('no_of_visits_by_ppiu'),
+    )
+
+    # Pass the aggregated data to the template
+    context = {
+        'aggregated_data': aggregated_data,
+    }
+    print(context)
+    family_planning_data = FamilyPlanning.objects.select_related('lhw_code').all()
+
+    return render(request, 'home.html', {'family_planning_data':family_planning_data,'divisions': divisions, 'context': context, 'chart_data': chart_data})
+
 
 def testing(request):
     divisions = Division.objects.all()
 
-    return render(request, 'testing.html',{'divisions': divisions})
+    return render(request, 'testing.html', {'divisions': divisions})
+
 
 from django.http import JsonResponse
+
 
 def get_districts(request):
     division_id = request.GET.get('division_id', None)
@@ -41,6 +205,7 @@ def get_districts(request):
         return JsonResponse(data)
     else:
         return JsonResponse({})
+
 
 def get_tehsils(request):
     district_id = request.GET.get('district_id', None)
@@ -61,7 +226,9 @@ def get_ucs(request):
     else:
         return JsonResponse({})
 
+
 from django.db.models import Sum
+
 
 def get_population(request):
     try:
@@ -99,6 +266,7 @@ def get_population(request):
 
         # Return an error response
         return JsonResponse({'error': 'Internal Server Error'}, status=500)
+
 
 def get_child(request):
     # Example 1: Get Total Count of Newborns Weighted
@@ -152,7 +320,6 @@ def get_child(request):
                                           'no_12_23_months_old_children__sum'] or 1
     fully_immunized_percentage = (child_health_data.filter(
         no_12_23_months_old_children_fully_immunized__gt=0).count() / total_12_23_months_old_children) * 100
-
     context = {
         'total_newborns_weighted': total_newborns_weighted,
         'age_group_counts': age_group_counts,
@@ -162,7 +329,61 @@ def get_child(request):
     return JsonResponse(context)
 
 
+def Customization(request):
+    divisions = Division.objects.all()
 
+    return render(request, 'customization.html', {'divisions': divisions})
+
+
+def get_fields(request):
+    selected_table = request.POST.get('selectedTable')
+
+    if selected_table == 'Child Health':
+        model = ChildHealth
+    elif selected_table == 'Mother Health':
+        model = MotherHealth
+    else:
+        return JsonResponse({'error': 'Invalid table selected'})
+
+    # Get all field names excluding the primary key
+    fields = [field.name for field in model._meta.get_fields() if field.name != 'id']
+
+    context = {
+        'fields': fields
+    }
+
+    return JsonResponse(context)
+
+
+def get_chart_data(request):
+    selected_tables = request.POST.getlist('selected_table[]')
+    selected_fields = request.POST.getlist('selected_fields[]')
+
+    chart_data = {}
+
+    for selected_table in selected_tables:
+        if selected_table == 'Child Health':
+            model = ChildHealth
+        elif selected_table == 'Mother Health':
+            model = MotherHealth
+        else:
+            return JsonResponse({'error': 'Invalid table selected'})
+
+        # Print or log the available fields for debugging
+        print(f"Available fields for {selected_table}: {model._meta.get_fields()}")
+
+        # Fetch data based on selected fields dynamically
+        data = model.objects.values(*selected_fields)
+
+        # Convert queryset to a list of dictionaries
+        data_list = list(data)
+
+        # Perform dynamic aggregations for each field
+        for field in selected_fields:
+            total_field = f'total_{selected_table}_{field}'
+            chart_data[total_field] = data.aggregate(Sum(field)).get(field + '__sum', 0)
+
+    return JsonResponse({'chart_data': chart_data})
 
 # def get_fac(request):
 

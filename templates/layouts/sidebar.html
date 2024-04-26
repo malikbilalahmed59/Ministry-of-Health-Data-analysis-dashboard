@@ -1,0 +1,65 @@
+{% load static %}
+<div class="sidebar pe-4 pb-3">
+    <nav class="navbar bg-light navbar-light">
+        <a href="index.html" class="navbar-brand mx-4 mb-3">
+            <h3 class="text-primary"><i class="fa fa-hashtag me-2"></i>Dashboard</h3>
+        </a>
+        <div class="d-flex align-items-center ms-4 mb-4">
+            <div class="position-relative">
+                <img class="rounded-circle" src="{% static 'img/user.jpg' %}" alt=""
+                     style="width: 40px; height: 40px;">
+                <div class="bg-success rounded-circle border border-2 border-white position-absolute end-0 bottom-0 p-1"></div>
+            </div>
+            <div class="ms-3">
+                {% if user.is_authenticated %}
+                <h6 class="mb-0">{{ user.username }}</h6>
+                <span>Admin</span>
+                {% else %}
+                <h6>You are not logged in.</h6>
+                {% endif %}
+            </div>
+        </div>
+        <div class="navbar-nav w-100">
+            <a href="/" class="nav-item nav-link {% if request.path == '/' %}active{% endif %}"><i
+                    class="fa fa-tachometer-alt me-2"></i>Dashboard</a>
+            <!--            <div class="nav-item dropdown">-->
+            <!--                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-th me-2"></i>Visualization</a>-->
+            <!--                <div class="dropdown-menu bg-transparent border-0">-->
+            <!--                    <a href="button.html" class="dropdown-item">Child Health</a>-->
+            <!--                    <a href="typography.html" class="dropdown-item">Mother Health</a>-->
+            <!--                    <a href="element.html" class="dropdown-item">Sewerage System</a>-->
+            <!--                </div>-->
+            <!--            </div>-->
+
+            <a href="{% url 'Customization' %}"
+               class="nav-item nav-link {% if request.path == '/customization/' %}active{% endif %}"><i
+                    class="fa fa-chart-bar me-2"></i>Customization</a>
+
+            <!--            <a href="chart.html" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Prediction</a>-->
+
+        </div>
+        <div class="navbar-nav w-100">
+
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-th me-2"></i>Births/Deaths</a>
+                <div class="dropdown-menu bg-transparent border-0">
+                    <a href="{% url 'BirthDeath' %}" class="dropdown-item">Add Data</a>
+                    <a href="{% url 'BirthDeathView' %}" class="dropdown-item">View Data</a>
+                </div>
+            </div>
+
+        </div>
+         <div class="navbar-nav w-100">
+
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-th me-2"></i>Family Planning</a>
+                <div class="dropdown-menu bg-transparent border-0">
+                    <a href="{% url 'FamilyPlanning' %}" class="dropdown-item">Add Data</a>
+                    <a href="{% url 'FamilyPlanningview' %}" class="dropdown-item">View Data</a>
+                </div>
+            </div>
+
+        </div>
+    </nav>
+</div>
+

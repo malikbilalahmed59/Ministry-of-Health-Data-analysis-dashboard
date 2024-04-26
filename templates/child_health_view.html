@@ -1,0 +1,50 @@
+{% extends 'layouts/app.html' %}
+
+{% block main_content %}
+<!-- Sale & Revenue Start -->
+{% load static %}
+<div class="container-fluid p-5">
+    <div class="table-responsive ">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+
+                <th scope="col">#</th>
+                <th scope="col">No of Live Births</th>
+                <th scope="col">No of Still Births</th>
+                <th scope="col">No All Deaths</th>
+                <th scope="col">No Of Neonatal Deaths</th>
+                <th scope="col">No of Infant Deaths</th>
+                <th scope="col">No of Children Deaths</th>
+                <th scope="col">No Of Maternal Deaths</th>
+
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <th scope="row"></th>
+                {% for i in context %}
+                <td>{{i.no_live_births}}</td>
+                                <td>{{i.no_still_births}}</td>
+
+                                <td>{{i.no_all_deaths}}</td>
+
+                                <td>{{i.no_neonatal_deaths}}</td>
+
+                                <td>{{i.no_infant_deaths_week}}</td>
+
+                                <td>{{i.no_infant_deaths_month}}</td>
+                <td>{{i.no_children_deaths}}</td>
+
+                                <td>{{i.no_maternal_deaths}}</td>
+
+
+                {% endfor %}
+            </tr>
+
+
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

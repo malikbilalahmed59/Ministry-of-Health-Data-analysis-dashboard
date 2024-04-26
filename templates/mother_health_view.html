@@ -1,0 +1,50 @@
+{% extends 'layouts/app.html' %}
+
+{% block main_content %}
+<!-- Sale & Revenue Start -->
+{% load static %}
+<div class="container-fluid p-5">
+    <div class="table-responsive ">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">no_eligible_couples</th>
+                <th scope="col">no_new_clients_family_planning</th>
+                <th scope="col">no_followup_cases_family_planning</th>
+                <th scope="col">total_traditional_method_users</th>
+                <th scope="col">total_modern_contraceptive_users</th>
+                <th scope="col">no_condom_users</th>
+                <th scope="col">no_oral_pills_users</th>
+                <th scope="col">no_coc_users</th>
+
+
+            </tr>
+            </thead>
+            <tbody>
+           {% for i in context %}
+                <td>{{i.no_live_births}}</td>
+                                <td>{{i.no_eligible_couples}}</td>
+
+                                <td>{{i.no_new_clients_family_planning}}</td>
+
+                                <td>{{i.no_followup_cases_family_planning}}</td>
+
+                                <td>{{i.total_traditional_method_users}}</td>
+
+                                <td>{{i.total_modern_contraceptive_users}}</td>
+                <td>{{i.no_condom_users}}</td>
+
+                                <td>{{i.no_oral_pills_users}}</td>
+           <td>{{i.no_coc_users}}</td>
+
+
+                {% endfor %}
+            </tr>
+
+
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

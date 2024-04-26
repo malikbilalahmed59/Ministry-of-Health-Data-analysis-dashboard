@@ -1,0 +1,76 @@
+{% load static %}
+<!-- Content Start -->
+<div class="content">
+    <nav class="navbar navbar-expand bg-light navbar-light sticky-top px-4 py-0">
+        <a href="index.html" class="navbar-brand d-flex d-lg-none me-4">
+            <h2 class="text-primary mb-0"><i class="fa fa-hashtag"></i></h2>
+        </a>
+        <a href="#" class="sidebar-toggler flex-shrink-0">
+            <i class="fa fa-bars"></i>
+        </a>
+        {% if request.path == '/' %}
+        <form class="d-none d-md-flex ms-4">
+            <div class="row">
+                <div class="col-6 py-2">
+
+                    <div class="input-group">
+                        <label for="divisionSelect" class="pe-2">Select Division</label>
+                        <select class="form-control" id="divisionSelect">
+                            <option >Select Division</option>
+                            {% for division in divisions %}
+                            <option value="{{ division.id }}">{{ division.division }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6 py-2">
+
+                    <div class="input-group">
+                        <label for="districtSelect" class="pe-2">Select District</label>
+                        <select class="form-control" id="districtSelect" disabled>
+                            <option >Select District</option>
+
+                            <!-- District options will be dynamically added here using JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-6 py-2">
+
+                    <div class="input-group">
+                        <label for="tehsilSelect" class="pe-2">Select Tehsil</label>
+                        <select class="form-control" id="tehsilSelect" disabled>
+                                                        <option >Select Tehsil</option>
+
+                            <!-- Tehsil options will be dynamically added here using JavaScript -->
+                        </select>
+                    </div>
+                </div>
+                <div class="col-6 py-2">
+                    <div class="input-group">
+                        <label for="ucSelect" class="pe-2">Select UC</label>
+                        <select class="form-control" id="ucSelect" disabled>
+                                                        <option >Select UC</option>
+
+                            <!-- UC options will be dynamically added here using JavaScript -->
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+        {% endif %}
+        <div class="navbar-nav align-items-center ms-auto">
+            <div class="nav-item dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                    <img class="rounded-circle me-lg-2" src="{% static 'img/user.jpg' %}" alt=""
+                         style="width: 40px; height: 40px;">
+                    <span class="d-none d-lg-inline-flex">{{ user.username }}</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end bg-light border-0 rounded-0 rounded-bottom m-0">
+                    <a href="#" class="dropdown-item">My Profile</a>
+                    <a href="#" class="dropdown-item">Settings</a>
+                    <a href="{% url 'logout' %}" class="dropdown-item">Log Out</a>
+                </div>
+            </div>
+        </div>
+    </nav>

@@ -49,6 +49,9 @@ class lhw_info(models.Model):
     uc = models.ForeignKey(UC, on_delete=models.CASCADE)
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.name
+
 
 class LHW(models.Model):
     lhw_code = models.CharField(max_length=20, unique=True)
@@ -165,7 +168,7 @@ class MotherHealth(models.Model):
 
 class FamilyPlanning(models.Model):
     lhw_code = models.ForeignKey(
-        LHW,
+        lhw_info,
         on_delete=models.CASCADE,
         related_name='family_planning'
     )
@@ -195,7 +198,7 @@ class FamilyPlanning(models.Model):
 
 class BirthsDeaths(models.Model):
     lhw_code = models.ForeignKey(
-        LHW,
+        lhw_info,
         on_delete=models.CASCADE,
         related_name='birth_deaths'
     )
@@ -214,7 +217,7 @@ class BirthsDeaths(models.Model):
 
 class Supervision(models.Model):
     lhw_code = models.ForeignKey(
-        LHW,
+        lhw_info,
         on_delete=models.CASCADE,
         related_name='supervision'
     )

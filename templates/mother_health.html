@@ -1,0 +1,34 @@
+{% extends 'layouts/app.html' %}
+
+{% block main_content %}
+<!-- Sale & Revenue Start -->
+{% load static %}
+<div class="container p-5">
+    <div class="row">
+        <div class="col-12 p-3">
+            <h1 class="text-center">Family Planning</h1>
+        </div>
+        <div class="col-12">
+        <form method="post" action="">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="form-group mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {# Add any additional customization, such as error messages or help text, if needed #}
+                {% if field.errors %}
+                <small class="text-danger">{{ field.errors|join:", " }}</small>
+                {% endif %}
+                {% if field.help_text %}
+                <small class="form-text text-muted">{{ field.help_text }}</small>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+            </div>
+    </div>
+</div>
+{% endblock %}
